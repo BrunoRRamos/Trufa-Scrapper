@@ -1,39 +1,47 @@
 import sys
 import os
-from bs4 import BeautifulSoup
-from urllib.request import Request, urlopen
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from constants import HEADER
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+import time
 
-def scrapParfum(target_url):
-    url = target_url
-    request = Request(url, headers=HEADER)
-    response = urlopen(request)
+def initialize_driver():
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
 
-    html_bytes = response.read()
-    encoding = response.headers.get_content_charset()
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    return driver
 
-    if encoding is None:
-        encoding = 'utf-8'
+def scrapParfum(driver, target_url):
+    driver.get(target_url)
+    time.sleep(3)
 
-    html = html_bytes.decode(encoding, errors='replace')
+    name = driver.find_element(By.ID, 'product-name').text.strip()
+    price = driver.find_element(By.ID, 'price_display').text.strip()
+    size = driver.find_element(By.CSS_SELECTOR, 'option[selected="selected"]').text.strip()
+    isAvailable = not driver.find_element(By.ID, 'stock-notification-request-message').is_displayed()
 
-    soup = BeautifulSoup(html, 'html.parser')
+    return { 'name': name, 'price': price, 'size': size, 'isAvailable': isAvailable }
 
-    name = soup.find(id='product-name').get_text().strip()
-    price = soup.find(id='price_display').get_text().strip()
-    isAvailable = soup.find('div', class_='product-label product-detail-label label-light js-stock-label pull-left m-top-none m-bottom-quarter m-right-quarter m-bottom-xs').get_text().strip()
+parfuns = [
+    'https://www.thekingofparfums.com.br/produtos/giorgio-armani-acqua-di-gio-profondo-lancamento/',
+    'https://www.thekingofparfums.com.br/produtos/paco-rabanne-1-million-royal/',
+    'https://www.thekingofparfums.com.br/produtos/invictus-paco-rabanne/'
+]
 
-    return { 'name': name, 'price': price, 'isAvailable': isAvailable }
-
-
-parfuns = ['https://www.thekingofparfums.com.br/produtos/giorgio-armani-acqua-di-gio-profondo-lancamento/', 
-                  'https://www.thekingofparfums.com.br/produtos/paco-rabanne-1-million-royal/',
-                  'https://www.thekingofparfums.com.br/produtos/invictus-paco-rabanne/' ]
+driver = initialize_driver()
 
 for url in parfuns:
-    obj = scrapParfum(url)
+    obj = scrapParfum(driver, url)
 
     print(obj['name'])
     print(obj['price'])
-    print(obj['isAvailable'])
+    print(obj['size'])
+    print(obj['isAvailable'],'\n')
+
+driver.quit()
+exit(0)
