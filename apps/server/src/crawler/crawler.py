@@ -1,42 +1,61 @@
-import sys
-import os
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.firefox import GeckoDriverManager
 import time
 
 def initialize_driver():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    firefox_options = Options()
+    firefox_options.add_argument("--headless")
+    firefox_options.add_argument("--no-sandbox")
+    firefox_options.add_argument("--disable-dev-shm-usage")
+    firefox_options.add_argument("--width=1920")
+    firefox_options.add_argument("--height=1080")
 
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), options=firefox_options)
     return driver
 
-def scrapParfum(driver, target_url):
+def select_size_button_selector(driver, target_size):
+    element = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, f'a[data-option="{target_size}"]'))
+        )
+    element.click()
+
+def select_size_dropdown_selector(driver, target_size):
+    element = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, f'option[value="{target_size}"]'))
+        )
+    element.click()
+
+def scrap_parfum(driver, target_url, target_size):
     driver.get(target_url)
     time.sleep(3)
 
     name = driver.find_element(By.ID, 'product-name').text.strip()
+
+    try:
+        select_size_dropdown_selector(driver, target_size)
+    except:
+        select_size_button_selector(driver, target_size)
+    
+    size = target_size
     price = driver.find_element(By.ID, 'price_display').text.strip()
-    size = driver.find_element(By.CSS_SELECTOR, 'option[selected="selected"]').text.strip()
     isAvailable = not driver.find_element(By.ID, 'stock-notification-request-message').is_displayed()
 
     return { 'name': name, 'price': price, 'size': size, 'isAvailable': isAvailable }
 
-parfuns = [
-    'https://www.thekingofparfums.com.br/produtos/giorgio-armani-acqua-di-gio-profondo-lancamento/',
-    'https://www.thekingofparfums.com.br/produtos/paco-rabanne-1-million-royal/',
-    'https://www.thekingofparfums.com.br/produtos/invictus-paco-rabanne/'
+parfums = [
+    {'url': 'https://www.thekingofparfums.com.br/produtos/paco-rabanne-1-million/', 'size': '100 ML'},
+    {'url': 'https://www.thekingofparfums.com.br/produtos/giorgio-armani-acqua-di-gio-profondo-lancamento/', 'size': '125ml'},
 ]
 
 driver = initialize_driver()
 
-for url in parfuns:
-    obj = scrapParfum(driver, url)
+for parfum in parfums:
+    obj = scrap_parfum(driver, parfum['url'], parfum['size'])
 
     print(obj['name'])
     print(obj['price'])
