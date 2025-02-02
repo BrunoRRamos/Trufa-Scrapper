@@ -1,1 +1,5 @@
-Instalar dependencias: pip install -r requirements.txt
+## Architecture
+
+---
+
+![alt text](./public/Architecture.png)
