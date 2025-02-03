@@ -5,6 +5,7 @@
     "target": "ESNext",
     "allowJs": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true
   }
 }
