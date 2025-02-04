@@ -4,7 +4,6 @@ export interface UrlDTO {
 }
 
 export interface IUrl {
-    id: String,
     name: String,
     url: String
 }
